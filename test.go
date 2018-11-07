@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -13,12 +15,15 @@ var processMonitorQuit chan bool
 var processPid int
 
 func isProcessRunning() bool {
-	process, err := os.FindProcess(processPid)
-	if err != nil {
-		fmt.Println(err)
+	cmd := exec.Command("tasklist")
+	output, _ := cmd.Output()
+	text := string(output)
+
+	if len(text) > 0 {
+		return strings.Contains(text, strconv.Itoa(processPid))
 	}
 
-	return process != nil
+	return false
 }
 
 func processMonitor() {
@@ -30,7 +35,13 @@ func processMonitor() {
 			if isProcessRunning() {
 				log.Println("Process is running", processPid)
 			} else {
-				log.Println("Proccess is not running")
+				log.Println("Proccess crash detected for", processPid)
+
+				time.Sleep(time.Second * 5)
+
+				processPid = startProcess()
+				go processMonitor()
+				return
 			}
 		}
 
@@ -39,12 +50,36 @@ func processMonitor() {
 }
 
 func startProcess() int {
-	cmd := exec.Command("calc.exe")
+	cmd := exec.Command("notepad.exe")
 	if err := cmd.Start(); err != nil {
 		log.Panic(err)
 	}
 
 	return cmd.Process.Pid
+}
+
+func simulateRestart() {
+	time.Sleep(time.Second * 5)
+
+	processMonitorQuit <- true
+
+	fmt.Println("Restarting process")
+
+	proc, err := os.FindProcess(processPid)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = proc.Kill()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	time.Sleep(time.Second * 5)
+
+	processPid = startProcess()
+
+	go processMonitor()
 }
 
 func main() {
@@ -53,6 +88,7 @@ func main() {
 	processPid = startProcess()
 
 	go processMonitor()
+	go simulateRestart()
 
 	<-programQuit
 }
