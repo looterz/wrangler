@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 )
@@ -43,6 +44,31 @@ func snsHandler(w http.ResponseWriter, r *http.Request) {
 		go confirmSubscription(URL)
 	} else if data["Type"].(string) == "Notification" {
 		log.Println("Received SNS Notification : ", data["Message"].(string))
+
+		var payload = []byte(data["Message"].(string))
+		var event map[string]interface{}
+
+		err = json.Unmarshal(payload, &event)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// If the action is update, and we are on the target branch, trigger a server update
+		if event["action"] == "update" && event["branch"] == serverBranch {
+			log.Println("Received server update event for", serverBranch, "branch")
+
+			processMonitorQuit <- true
+
+			killServer()
+
+			time.Sleep(time.Second * 5)
+
+			updateServer()
+			startServer()
+
+			go processMonitor()
+		}
 	}
 
 	fmt.Fprintf(w, "Success")

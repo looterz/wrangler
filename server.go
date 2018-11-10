@@ -7,20 +7,67 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
-func startServer(level string, name string, maxPlayers string) (process *os.Process) {
-	cmd := exec.Command(serverBin, fmt.Sprintf("%s?ServerName=%s?MaxPlayers=%s", level, name, maxPlayers), "-log")
+var programQuit chan bool
+var processMonitorQuit chan bool
+
+func processMonitor() {
+	for {
+		select {
+		case <-processMonitorQuit:
+			return
+		default:
+			if !isProcessRunning() {
+				log.Println("Proccess crash detected, restarting")
+
+				time.Sleep(time.Second * 5)
+
+				startServer()
+
+				go processMonitor()
+				return
+			}
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
+func isProcessRunning() bool {
+	cmd := exec.Command("tasklist")
+	output, _ := cmd.Output()
+	text := string(output)
+
+	if len(text) > 0 {
+		return strings.Contains(text, processName)
+	}
+
+	return false
+}
+
+func killServer() error {
+	kill := exec.Command("TASKKILL", "/T", "/F", "/PID", strconv.Itoa(serverProcess.Pid))
+	kill.Stderr = os.Stderr
+	kill.Stdout = os.Stdout
+	return kill.Run()
+}
+
+func startServer() {
+	cmd := exec.Command(serverBin, fmt.Sprintf("%s?ServerName=%s?MaxPlayers=%s", serverMap, serverName, serverMaxPlayers), "-log")
 	if err := cmd.Start(); err != nil {
 		log.Panic(err)
 	}
 
 	log.Println("Server started with pid", cmd.Process.Pid)
 
-	return cmd.Process
+	serverProcess = cmd.Process
 }
 
-func updateServer(serverBranch string) {
+func updateServer() {
 	args := []string{"+login anonymous", "+app_update 412680"}
 	if serverBranch != "" {
 		args = append(args, fmt.Sprintf("-beta %s", serverBranch))

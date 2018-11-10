@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -18,11 +17,17 @@ import (
 var steamcmdPath = "C:\\steamcmd"
 var steamcmdBin = fmt.Sprintf("%s\\steamcmd.exe", steamcmdPath)
 var serverBin = fmt.Sprintf("%s\\steamapps\\common\\The Isle Dedicated Server\\TheIsleServer.exe", steamcmdPath)
-var serverProcess *os.Process
 var ec2MetaClient *ec2metadata.EC2Metadata
 var awsSession *session.Session
 var ec2Service *ec2.EC2
 var snsService *sns.SNS
+
+var serverProcess *os.Process
+var processName = "TheIsleServer.exe"
+var serverBranch string
+var serverName string
+var serverMap string
+var serverMaxPlayers string
 
 func main() {
 	// Setup logging
@@ -52,22 +57,22 @@ func main() {
 	snsService = sns.New(awsSession)
 
 	// Parse this EC2 instances tags
-	serverBranch, err := getTagValue("Server_Branch")
+	serverBranch, err = getTagValue("Server_Branch")
 	if err != nil {
 		log.Panic(err)
 	}
 
-	serverName, err := getTagValue("Server_Name")
+	serverName, err = getTagValue("Server_Name")
 	if err != nil {
 		log.Panic(err)
 	}
 
-	serverMap, err := getTagValue("Server_Map")
+	serverMap, err = getTagValue("Server_Map")
 	if err != nil {
 		log.Panic(err)
 	}
 
-	serverMaxPlayers, err := getTagValue("Server_MaxPlayers")
+	serverMaxPlayers, err = getTagValue("Server_MaxPlayers")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -84,22 +89,14 @@ func main() {
 	go http.ListenAndServe(":8081", nil)
 
 	// Run steamcmd to update the server
-	updateServer(serverBranch)
+	updateServer()
+	startServer()
 
-	// Setup the channels
+	// Setup the main loop
+	programQuit = make(chan bool)
+	processMonitorQuit = make(chan bool)
 
-	// Start the routines
-	// Run the server, restart when it crashes
-	for {
-		log.Println("Server offline, restarting")
+	go processMonitor()
 
-		time.Sleep(10 * time.Second)
-
-		serverProcess = startServer(serverMap, serverName, serverMaxPlayers)
-
-		_, err := serverProcess.Wait()
-		if err != nil {
-			log.Println(err)
-		}
-	}
+	<-programQuit
 }
