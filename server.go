@@ -68,12 +68,15 @@ func startServer() {
 }
 
 func updateServer() {
-	args := []string{"+login anonymous", "+app_update 412680"}
+	args := []string{"+login", "anonymous", "+app_update", "412680"}
 	if serverBranch != "" {
-		args = append(args, fmt.Sprintf("-beta %s", serverBranch))
+		args = append(args, "-beta")
+		args = append(args, serverBranch)
 	}
 	args = append(args, "validate")
 	args = append(args, "+quit")
+
+	log.Println("Updating server with args:\n", steamcmdBin, args)
 
 	cmd := exec.Command(steamcmdBin, args...)
 
