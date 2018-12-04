@@ -7,23 +7,40 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/BurntSushi/toml"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sns"
 )
 
-var steamcmdPath = "C:\\steamcmd"
-var steamcmdBin = fmt.Sprintf("%s\\steamcmd.exe", steamcmdPath)
-var serverBin = fmt.Sprintf("%s\\steamapps\\common\\The Isle Dedicated Server\\TheIsleServer.exe", steamcmdPath)
+type config struct {
+	Steamcmd       string
+	Server         string
+	Process        string
+	UseS3Bucket    bool
+	S3Bucket       string
+	S3BucketPrefix string
+	S3Folder       string
+}
+
+var Config config
+
+var steamcmdBin string
+var serverPath string
+var serverBin string
+var processName string
+
+var serverProcess *os.Process
+
 var ec2MetaClient *ec2metadata.EC2Metadata
 var awsSession *session.Session
 var ec2Service *ec2.EC2
 var snsService *sns.SNS
+var s3Service *s3.S3
 
-var serverProcess *os.Process
-var processName = "TheIsleServer.exe"
 var serverBranch string
 var serverName string
 var serverMap string
@@ -41,6 +58,16 @@ func main() {
 	mw := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(mw)
 
+	// Load toml configuration
+	if _, err := toml.DecodeFile("wrangler.toml", &Config); err != nil {
+		log.Panic(err)
+	}
+
+	steamcmdBin = Config.Steamcmd
+	serverPath = Config.Server
+	processName = Config.Process
+	serverBin = fmt.Sprintf("%s\\%s", serverPath, processName)
+
 	// Setup AWS EC2 Metadata client for fetching information about this instance
 	// session.New works without a region, session.NewSession requires a region?
 	ec2MetaClient = ec2metadata.New(session.New())
@@ -55,6 +82,7 @@ func main() {
 	// Setup the AWS client services
 	ec2Service = ec2.New(awsSession)
 	snsService = sns.New(awsSession)
+	s3Service = s3.New(awsSession)
 
 	// Parse this EC2 instances tags
 	serverBranch, err = getTagValue("Server_Branch")

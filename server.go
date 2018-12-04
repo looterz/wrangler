@@ -68,6 +68,11 @@ func startServer() {
 }
 
 func updateServer() {
+	if Config.UseS3Bucket {
+		updateServerS3()
+		return
+	}
+
 	args := []string{"+login", "anonymous", "+app_update", "412680"}
 	if serverBranch != "" {
 		args = append(args, "-beta")

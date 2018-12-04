@@ -1,0 +1,7 @@
+steamcmd = "C:\\steamcmd\\steamcmd.exe"
+server = "C:\\steamcmd\\steamapps\\common\\The Isle Dedicated Server"
+process = "TheIsleServer.exe"
+UseS3Bucket = false
+S3Bucket = ""
+S3BucketPrefix = ""
+S3Folder = ""
