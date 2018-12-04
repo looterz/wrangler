@@ -1,7 +1,20 @@
+# The path to steamcmd
 steamcmd = "C:\\steamcmd\\steamcmd.exe"
+
+# The absolute path to the servers root directory
 server = "C:\\steamcmd\\steamapps\\common\\The Isle Dedicated Server"
+
+# The process name to monitor
 process = "TheIsleServer.exe"
+
+# Use Amazon S3 instead of steamcmd, requires that the instance have an assigned IAM role
 UseS3Bucket = false
+
+# The bucket name
 S3Bucket = ""
+
+# The bucket prefix (not working)
 S3BucketPrefix = ""
+
+# The absolute path of the folder to download the server to
 S3Folder = ""
