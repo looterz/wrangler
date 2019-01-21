@@ -4,7 +4,7 @@ Unreal Engine 4 Dedicated Server manager built around Amazon Web Services.
 ## features
 * Supports both steampipe and S3 for updating the server
 * Automatic updates triggered from SNS notifications
-* Server crash monitoring and recovery
+* Automatic process monitoring and crash recovery
 * Automatic server configuration via EC2 instance meta-data and tags
 
 ## config
