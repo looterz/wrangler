@@ -24,7 +24,13 @@ func processMonitor() {
 			if !isProcessRunning() {
 				log.Println("Proccess crash detected, restarting")
 
-				time.Sleep(time.Second * 5)
+				time.Sleep(time.Second * 60)
+
+				if err := killServer(); err != nil {
+					log.Println(err)
+				}
+
+				time.Sleep(time.Second * 10)
 
 				startServer()
 
@@ -57,7 +63,7 @@ func killServer() error {
 }
 
 func startServer() {
-	cmd := exec.Command(serverBin, fmt.Sprintf("%s?ServerName=%s?MaxPlayers=%s", serverMap, serverName, serverMaxPlayers), "-log")
+	cmd := exec.Command(serverBin, fmt.Sprintf("%s?ServerName=%s?MaxPlayers=%s?Game=%s", serverMap, serverName, serverMaxPlayers, serverGame), "-log")
 	if err := cmd.Start(); err != nil {
 		log.Panic(err)
 	}
@@ -74,7 +80,7 @@ func updateServer() {
 	}
 
 	args := []string{"+login", "anonymous", "+app_update", "412680"}
-	if serverBranch != "" {
+	if serverBranch != "" && serverBranch != "live" {
 		args = append(args, "-beta")
 		args = append(args, serverBranch)
 	}

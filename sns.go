@@ -29,49 +29,58 @@ func snsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf(string(body))
-	err = json.Unmarshal(body, &f)
-	if err != nil {
-		log.Printf("Unable to unmarshal request")
-		return
-	}
+	bodyStr := string(body)
 
-	data := f.(map[string]interface{})
-	log.Println(data["Type"].(string))
+	log.Printf(bodyStr)
 
-	if data["Type"].(string) == "SubscriptionConfirmation" {
-		URL := data["SubscribeURL"].(string)
-		go confirmSubscription(URL)
-	} else if data["Type"].(string) == "Notification" {
-		log.Println("Received SNS Notification : ", data["Message"].(string))
-
-		var payload = []byte(data["Message"].(string))
-		var event map[string]interface{}
-
-		err = json.Unmarshal(payload, &event)
+	if bodyStr != "" {
+		err = json.Unmarshal(body, &f)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Unable to unmarshal request")
 			return
 		}
 
-		// If the action is update, and we are on the target branch, trigger a server update
-		if event["action"] == "update" && event["branch"] == serverBranch {
-			log.Println("Received server update event for", serverBranch, "branch")
+		data := f.(map[string]interface{})
+		log.Println(data["Type"].(string))
 
-			processMonitorQuit <- true
+		if data["Type"].(string) == "SubscriptionConfirmation" {
+			URL := data["SubscribeURL"].(string)
+			go confirmSubscription(URL)
+		} else if data["Type"].(string) == "Notification" {
+			log.Println("Received SNS Notification : ", data["Message"].(string))
 
-			killServer()
+			var payload = []byte(data["Message"].(string))
+			var event map[string]interface{}
 
-			time.Sleep(time.Second * 5)
+			err = json.Unmarshal(payload, &event)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
-			updateServer()
-			startServer()
+			// If the action is update, and we are on the target branch, trigger a server update
+			if event["action"] == "update" && event["branch"] == serverBranch {
+				log.Println("Received server update event for", serverBranch, "branch")
 
-			go processMonitor()
+				processMonitorQuit <- true
+
+				time.Sleep(time.Second * 5)
+
+				if err := killServer(); err != nil {
+					log.Println(err)
+				}
+
+				time.Sleep(time.Second * 5)
+
+				updateServer()
+				startServer()
+
+				go processMonitor()
+			}
 		}
-	}
 
-	fmt.Fprintf(w, "Success")
+		fmt.Fprintf(w, "Success")
+	}
 }
 
 func subscribe(topicArn string) {

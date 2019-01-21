@@ -45,6 +45,7 @@ var serverBranch string
 var serverName string
 var serverMap string
 var serverMaxPlayers string
+var serverGame string
 
 func main() {
 	// Setup logging
@@ -87,26 +88,37 @@ func main() {
 	// Parse this EC2 instances tags
 	serverBranch, err = getTagValue("Server_Branch")
 	if err != nil {
+		log.Println("Failed to get tag value for Server_Branch")
 		log.Panic(err)
 	}
 
 	serverName, err = getTagValue("Server_Name")
 	if err != nil {
+		log.Println("Failed to get tag value for Server_Name")
 		log.Panic(err)
 	}
 
 	serverMap, err = getTagValue("Server_Map")
 	if err != nil {
+		log.Println("Failed to get tag value for Server_Map")
 		log.Panic(err)
 	}
 
 	serverMaxPlayers, err = getTagValue("Server_MaxPlayers")
 	if err != nil {
+		log.Println("Failed to get tag value for Server_MaxPlayers")
+		log.Panic(err)
+	}
+
+	serverGame, err = getTagValue("Server_Game")
+	if err != nil {
+		log.Println("Failed to get tag value for Server_Game")
 		log.Panic(err)
 	}
 
 	snsTopic, err := getTagValue("SNS_TOPIC")
 	if err != nil {
+		log.Println("Failed to get tag value for SNS_TOPIC")
 		log.Panic(err)
 	}
 
