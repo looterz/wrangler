@@ -46,6 +46,7 @@ var serverName string
 var serverMap string
 var serverMaxPlayers string
 var serverGame string
+var serverGameIniURI string
 
 func main() {
 	// Setup logging
@@ -122,6 +123,11 @@ func main() {
 		log.Panic(err)
 	}
 
+	serverGameIniURI, err := getTagValue("GAME_INI_URI")
+	if err != nil {
+		log.Println("Custom game ini path undefined, using default")
+	}
+
 	// Setup SNS listener
 	subscribe(snsTopic)
 
@@ -129,7 +135,7 @@ func main() {
 	go http.ListenAndServe(":8081", nil)
 
 	// Run steamcmd to update the server
-	updateServer()
+	updateServer(serverGameIniURI)
 	startServer()
 
 	// Setup the main loop

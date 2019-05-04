@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
@@ -73,7 +74,25 @@ func startServer() {
 	serverProcess = cmd.Process
 }
 
-func updateServer() {
+func updateServerConfig(IniURI string) {
+	log.Println("Downloading game ini from", IniURI)
+
+	adminFilePath := fmt.Sprintf("%s\\TheIsle\\Saved\\Config\\WindowsServer\\Game.ini", Config.Server)
+
+	if err := DownloadFile(adminFilePath, IniURI); err != nil {
+		log.Println(err)
+	} else {
+		log.Println("Updated server admins file")
+	}
+}
+
+func updateServer(IniURI string) {
+	if IniURI != "" {
+		updateServerConfig(IniURI)
+	} else {
+		updateServerConfig("https://s3-us-west-2.amazonaws.com/isle-static/Game.ini")
+	}
+
 	if Config.UseS3Bucket {
 		updateServerS3()
 		return
@@ -102,4 +121,25 @@ func updateServer() {
 	}
 
 	log.Println(stdBuffer.String())
+}
+
+// DownloadFile downloads a file using http
+func DownloadFile(filepath string, url string) error {
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }

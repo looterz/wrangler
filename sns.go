@@ -72,7 +72,7 @@ func snsHandler(w http.ResponseWriter, r *http.Request) {
 
 				time.Sleep(time.Second * 5)
 
-				updateServer()
+				updateServer(serverGameIniURI)
 				startServer()
 
 				go processMonitor()
