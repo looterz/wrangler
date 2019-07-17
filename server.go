@@ -64,7 +64,7 @@ func killServer() error {
 }
 
 func startServer() {
-	cmd := exec.Command(serverBin, fmt.Sprintf("%s?ServerName=%s?MaxPlayers=%s?Game=%s", serverMap, serverName, serverMaxPlayers, serverGame), "-log")
+	cmd := exec.Command(serverBin, fmt.Sprintf("%s?ServerName=%s?MaxPlayers=%s?Game=%s", serverMap, serverName, serverMaxPlayers, serverGame), fmt.Sprintf("-SteamServerName=%s", serverName), "-log")
 	if err := cmd.Start(); err != nil {
 		log.Panic(err)
 	}
