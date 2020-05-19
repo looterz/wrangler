@@ -77,7 +77,7 @@ func startServer() {
 func updateServerConfig(IniURI string) {
 	log.Println("Downloading game ini from", IniURI)
 
-	adminFilePath := fmt.Sprintf("%s\\TheIsle\\Saved\\Config\\WindowsServer\\Game.ini", Config.Server)
+	adminFilePath := fmt.Sprintf("%s\\%s\\Saved\\Config\\WindowsServer\\Game.ini", Config.Server, Config.GameFolder)
 
 	if err := DownloadFile(adminFilePath, IniURI); err != nil {
 		log.Println(err)
@@ -89,8 +89,8 @@ func updateServerConfig(IniURI string) {
 func updateServer(IniURI string) {
 	if IniURI != "" {
 		updateServerConfig(IniURI)
-	} else {
-		updateServerConfig("https://s3-us-west-2.amazonaws.com/isle-static/Game.ini")
+	} else if Config.ServerConfig != "" {
+		updateServerConfig(Config.ServerConfig)
 	}
 
 	if Config.UseS3Bucket {
@@ -98,7 +98,7 @@ func updateServer(IniURI string) {
 		return
 	}
 
-	args := []string{"+login", "anonymous", "+app_update", "412680"}
+	args := []string{"+login", "anonymous", "+app_update", Config.AppID}
 	if serverBranch != "" && serverBranch != "live" {
 		args = append(args, "-beta")
 		args = append(args, serverBranch)

@@ -24,6 +24,9 @@ type config struct {
 	S3Bucket       string
 	S3BucketPrefix string
 	S3Folder       string
+	GameFolder     string
+	AppID          string
+	ServerConfig string
 }
 
 var Config config
